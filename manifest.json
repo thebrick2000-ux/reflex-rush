@@ -1,0 +1,22 @@
+{
+  "name": "Reflex Rush",
+  "short_name": "ReflexRush",
+  "description": "Juego de reflejos y pulsaciones con botones de colores",
+  "start_url": "/reflex-rush/",
+  "display": "standalone",
+  "background_color": "#f0eaff",
+  "theme_color": "#9922ee",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/9922ee/ffffff?text=RR",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/9922ee/ffffff?text=RR",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
