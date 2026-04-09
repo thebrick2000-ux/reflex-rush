@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Reflex Rush</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0eaff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    #game-root {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.2rem 0.8rem 1.5rem;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #7720cc;
+      margin-bottom: 1rem;
+      letter-spacing: 0.04em;
+    }
+
+    #hud {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 1.2rem;
+      gap: 8px;
+    }
+    .hud-box {
+      background: #fff;
+      border: 1.5px solid #ddd;
+      border-radius: 12px;
+      padding: 8px 14px;
+      text-align: center;
+      flex: 1;
+    }
+    .hud-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.07em; }
+    .hud-val   { font-size: 24px; font-weight: 600; color: #333; margin-top: 2px; }
+    #hud-time .hud-val { color: #e08000; }
+
+    #board-wrap { position: relative; width: 100%; }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+      padding: 20px 16px;
+      background: #fff;
+      border-radius: 20px;
+      border: 1.5px solid #e0d8f0;
+    }
+
+    .btn {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: none;
+      background: #d8d0f0;
+      cursor: pointer;
+      outline: none;
+      position: relative;
+      transition: background 0.08s, transform 0.07s;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .btn:active { transform: scale(0.85); }
+    .btn.red    { background: #ff3311; }
+    .btn.yellow { background: #ffbb00; }
+    .btn.purple { background: #9922ee; }
+
+    .btn .x-mark {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7em;
+      font-weight: 700;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: xpop 0.18s ease-out;
+    }
+    .btn .x-mark.x-purple { background: rgba(60,0,120,0.82); color: #fff; }
+    .btn .x-mark.x-off    { background: rgba(40,40,40,0.72); color: #fff; }
+
+    @keyframes xpop {
+      0%   { transform: scale(0.4); opacity: 0; }
+      60%  { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    #msg-area {
+      margin-top: 1rem;
+      min-height: 28px;
+      font-size: 15px;
+      text-align: center;
+      font-weight: 600;
+    }
+    .plus  { color: #22aa44; }
+    .minus { color: #dd2200; }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: rgba(240,234,255,0.97);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 10;
+      padding: 1.2rem;
+    }
+    #overlay h2  { color: #333; font-size: 22px; font-weight: 600; }
+    #overlay p   { color: #555; font-size: 13px; text-align: center; max-width: 290px; line-height: 1.85; }
+    #overlay .big-score { font-size: 52px; font-weight: 700; color: #7720cc; }
+    #overlay .sub { font-size: 14px; color: #666; }
+    #overlay button {
+      margin-top: 8px; padding: 13px 34px;
+      border-radius: 14px; border: none;
+      background: #9922ee; color: #fff;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.02em;
+    }
+    #overlay button:active { background: #7710cc; transform: scale(0.97); }
+
+    .legend {
+      display: flex; gap: 10px; margin-top: 1rem;
+      justify-content: center; flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: #555;
+      background: #fff; border: 1px solid #e0d8f0;
+      border-radius: 20px; padding: 4px 10px;
+    }
+    .legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+
+    .speed-banner {
+      position: absolute;
+      top: -36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff3311;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      animation: bannerPop 0.3s ease-out;
+      pointer-events: none;
+    }
+    @keyframes bannerPop {
+      0% { opacity: 0; top: -20px; }
+      100% { opacity: 1; top: -36px; }
+    }
+  </style>
+</head>
+<body>
+<div id="game-root">
+  <h1>🎮 Reflex Rush</h1>
+
+  <div id="hud">
+    <div class="hud-box">
+      <div class="hud-label">Puntos</div>
+      <div class="hud-val" id="hud-score">0</div>
+    </div>
+    <div class="hud-box" id="hud-time">
+      <div class="hud-label">Tiempo</div>
+      <div class="hud-val" id="hud-timer">60</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">Aciertos</div>
+      <div class="hud-val" id="hud-hits">0</div>
+    </div>
+  </div>
+
+  <div id="board-wrap">
+    <div id="board"></div>
+    <div id="overlay">
+      <h2>🎮 Reflex Rush</h2>
+      <p>
+        🔴 Rojo = +1 pt &nbsp;|&nbsp; 🟡 Amarillo = +1 pt<br>
+        🟣 Púrpura = trampa &minus;3 pts<br>
+        Pulsado tarde o apagado = &minus;1 pt<br>
+        ¡La velocidad aumenta cada 10 segundos!
+      </p>
+      <button id="start-btn">¡Jugar!</button>
+    </div>
+  </div>
+
+  <div id="msg-area"></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#ff3311"></div> Rojo +1</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffbb00"></div> Amarillo +1</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9922ee"></div> Púrpura &minus;3</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d8d0f0;border:1px solid #ccc"></div> Apagado/tarde &minus;1</div>
+  </div>
+</div>
+
+<script>
+const TOTAL = 10, GAME_TIME = 60;
+let score = 0, hits = 0, timeLeft = GAME_TIME, running = false;
+let litButtons = {}, purpleOnBoard = false;
+let tickInterval, spawnInterval, purpleInterval, msgTimeout;
+let spawnMs = 900, litDuration = 1400;
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx = null;
+function getACtx() { if (!actx) actx = new AudioCtx(); return actx; }
+
+function playErrorPurple() {
+  try {
+    const ctx = getACtx();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(180, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.35);
+    g.gain.setValueAtTime(0.35, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
+    o.start(); o.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+function playErrorLate() {
+  try {
+    const ctx = getACtx();
+    [0, 0.1].forEach(delay => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'square';
+      o.frequency.setValueAtTime(440, ctx.currentTime + delay);
+      o.frequency.setValueAtTime(220, ctx.currentTime + delay + 0.05);
+      g.gain.setValueAtTime(0.2, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
+      o.start(ctx.currentTime + delay); o.stop(ctx.currentTime + delay + 0.2);
+    });
+  } catch(e) {}
+}
+
+function playSuccess() {
+  try {
+    const ctx = getACtx();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(660, ctx.currentTime);
+    o.frequency.setValueAtTime(880, ctx.currentTime + 0.06);
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    o.start(); o.stop(ctx.currentTime + 0.2);
+  } catch(e) {}
+}
+
+const board = document.getElementById('board');
+const overlay = document.getElementById('overlay');
+const hudScore = document.getElementById('hud-score');
+const hudTimer = document.getElementById('hud-timer');
+const hudHits  = document.getElementById('hud-hits');
+const msgArea  = document.getElementById('msg-area');
+const btns = [];
+
+for (let i = 0; i < TOTAL; i++) {
+  const b = document.createElement('button');
+  b.className = 'btn';
+  b.addEventListener('click', () => onPress(i));
+  board.appendChild(b);
+  btns.push(b);
+}
+
+function showMsg(html) {
+  clearTimeout(msgTimeout);
+  msgArea.innerHTML = html;
+  msgTimeout = setTimeout(() => { msgArea.innerHTML = ''; }, 850);
+}
+
+function showX(idx, cls) {
+  const existing = btns[idx].querySelector('.x-mark');
+  if (existing) existing.remove();
+  const x = document.createElement('div');
+  x.className = 'x-mark ' + cls;
+  x.textContent = '✕';
+  btns[idx].appendChild(x);
+  setTimeout(() => { if (x.parentNode) x.remove(); }, 600);
+}
+
+function clearLit(idx) {
+  if (litButtons[idx] === 'purple') purpleOnBoard = false;
+  delete litButtons[idx];
+  btns[idx].className = 'btn';
+}
+
+function onPress(idx) {
+  if (!running) return;
+  const color = litButtons[idx];
+  if (color === 'red' || color === 'yellow') {
+    score += 1; hits++;
+    playSuccess();
+    showMsg('<span class="plus">+1 punto ' + (color === 'red' ? '🔴' : '🟡') + '</span>');
+    clearLit(idx);
+  } else if (color === 'purple') {
+    score = Math.max(0, score - 3);
+    playErrorPurple();
+    showMsg('<span class="minus">-3 puntos 🟣 ¡trampa!</span>');
+    showX(idx, 'x-purple');
+    clearLit(idx);
+  } else {
+    score = Math.max(0, score - 1);
+    playErrorLate();
+    showMsg('<span class="minus">-1 punto (fuera de tiempo / apagado)</span>');
+    showX(idx, 'x-off');
+  }
+  updateHUD();
+}
+
+function freeSlots() {
+  const f = [];
+  for (let i = 0; i < TOTAL; i++) if (!litButtons[i]) f.push(i);
+  return f;
+}
+
+function spawnButton() {
+  if (!running) return;
+  const free = freeSlots();
+  if (!free.length) return;
+  const idx = free[Math.floor(Math.random() * free.length)];
+  const r = Math.random();
+  const color = r < 0.60 ? 'red' : 'yellow';
+  const stays = r < 0.35 ? 1 : r < 0.70 ? 2 : 3;
+  litButtons[idx] = color;
+  btns[idx].className = 'btn ' + color;
+  setTimeout(() => { if (litButtons[idx] === color) clearLit(idx); }, litDuration * stays);
+}
+
+function spawnPurple() {
+  if (!running || purpleOnBoard) return;
+  const free = freeSlots();
+  if (!free.length) return;
+  const idx = free[Math.floor(Math.random() * free.length)];
+  purpleOnBoard = true;
+  litButtons[idx] = 'purple';
+  btns[idx].className = 'btn purple';
+  setTimeout(() => { if (litButtons[idx] === 'purple') clearLit(idx); }, 2500);
+}
+
+function updateHUD() {
+  hudScore.textContent = score;
+  hudTimer.textContent = timeLeft;
+  hudHits.textContent  = hits;
+}
+
+function showSpeedBanner(level) {
+  const old = document.querySelector('.speed-banner');
+  if (old) old.remove();
+  const b = document.createElement('div');
+  b.className = 'speed-banner';
+  b.textContent = '⚡ Nivel ' + level + ' — ¡más rápido!';
+  document.getElementById('board-wrap').appendChild(b);
+  setTimeout(() => { if (b.parentNode) b.remove(); }, 1800);
+}
+
+function endGame() {
+  running = false;
+  clearInterval(tickInterval);
+  clearInterval(spawnInterval);
+  clearInterval(purpleInterval);
+  for (let i = 0; i < TOTAL; i++) { delete litButtons[i]; btns[i].className = 'btn'; }
+  purpleOnBoard = false;
+  overlay.innerHTML = `
+    <h2>⏱️ ¡Tiempo!</h2>
+    <div class="big-score">${score}</div>
+    <p class="sub">Aciertos: <strong>${hits}</strong></p>
+    <p>${score >= 30 ? '🏆 ¡Increíble reflejos!' : score >= 15 ? '👏 ¡Muy bien jugado!' : '💪 ¡Sigue practicando!'}</p>
+    <button id="start-btn">Jugar de nuevo</button>
+  `;
+  overlay.style.display = 'flex';
+  document.getElementById('start-btn').addEventListener('click', startGame);
+}
+
+function startGame() {
+  score = 0; hits = 0; timeLeft = GAME_TIME;
+  running = true; purpleOnBoard = false; litButtons = {};
+  spawnMs = 900; litDuration = 1400;
+  for (let i = 0; i < TOTAL; i++) btns[i].className = 'btn';
+  overlay.style.display = 'none';
+  msgArea.innerHTML = '';
+  updateHUD();
+  clearInterval(tickInterval);
+  clearInterval(spawnInterval);
+  clearInterval(purpleInterval);
+
+  let speedLevel = 0;
+
+  tickInterval = setInterval(() => {
+    timeLeft--;
+    const elapsed = GAME_TIME - timeLeft;
+    if (elapsed > 0 && elapsed % 10 === 0) {
+      speedLevel++;
+      spawnMs     = Math.max(280, spawnMs - 80);
+      litDuration = Math.max(580, litDuration - 100);
+      clearInterval(spawnInterval);
+      spawnInterval = setInterval(spawnButton, spawnMs);
+      showSpeedBanner(speedLevel);
+    }
+    updateHUD();
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+
+  spawnInterval  = setInterval(spawnButton, spawnMs);
+  purpleInterval = setInterval(spawnPurple, 6000);
+  spawnButton();
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+</script>
+</body>
+</html>
